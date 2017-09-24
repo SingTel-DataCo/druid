@@ -29,12 +29,18 @@ import io.druid.segment.Capabilities;
 import io.druid.segment.Cursor;
 import io.druid.segment.LongColumnSelector;
 import io.druid.segment.column.ValueType;
+
+import com.dataspark.masking.MaskingUtil;
+
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 
 public class LongTopNColumnSelectorStrategy
     implements TopNColumnSelectorStrategy<LongColumnSelector, Long2ObjectMap<Aggregator[]>>
 {
+  private BaseTopNAlgorithm.AggregatorDetails aggregatorDetails; //ordered hashmap of field name to its aggregator.
+  private TopNQuery query;
+
   @Override
   public int getCardinality(LongColumnSelector selector)
   {
@@ -70,11 +76,14 @@ public class LongTopNColumnSelectorStrategy
       Long2ObjectMap<Aggregator[]> aggregatesStore
   )
   {
+    this.query = query;
     while (!cursor.isDone()) {
       long key = selector.get();
       Aggregator[] theAggregators = aggregatesStore.get(key);
       if (theAggregators == null) {
-        theAggregators = BaseTopNAlgorithm.makeAggregators(cursor, query.getAggregatorSpecs());
+        this.aggregatorDetails = BaseTopNAlgorithm.getAggregatorDetails(cursor,
+            query.getAggregatorSpecs());
+        theAggregators = aggregatorDetails.theAggregators;
         aggregatesStore.put(key, theAggregators);
       }
       for (Aggregator aggregator : theAggregators) {
@@ -97,6 +106,9 @@ public class LongTopNColumnSelectorStrategy
         Object[] vals = new Object[aggs.length];
         for (int i = 0; i < aggs.length; i++) {
           vals[i] = aggs[i].get();
+          if(MaskingUtil.shouldMask(query.getDataSource(), aggregatorDetails.fieldNames[i])){
+            vals[i] = MaskingUtil.doMask(vals[i]);
+          }
         }
 
         Comparable key = entry.getLongKey();

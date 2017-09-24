@@ -1,0 +1,15 @@
+{
+   "queryType": "select",
+   "dataSource": {
+       "type": "union",
+       "dataSources": ["data", "data2" ]
+},
+   "descending": "false",
+   "dimensions":[],
+   "metrics":[],
+   "granularity": "all",
+   "intervals": [
+     "2017-06-05T00:00:02Z/2017-06-05T23:59:59Z"
+   ],
+   "pagingSpec":{"pagingIdentifiers": {}, "threshold":50}
+ }

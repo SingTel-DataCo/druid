@@ -1,0 +1,106 @@
+{
+	"queryType": "groupBy",
+	"dataSource": {
+		"type": "query",
+		"query": {
+			"queryType": "groupBy",
+			"dataSource": "data",
+			"granularity": "hour",
+			"dimensions": [],
+			"aggregations": [
+
+				{
+					"type": "count",
+					"name": "count_of_values"
+				},
+				{
+					"type": "hyperUnique",
+					"name": "uniq_ppl",
+					"fieldName": "uniq"
+				},
+				{
+					"type": "javascript",
+					"name": "sum_of_latenties_using_js",
+					"fieldNames": ["sum"],
+					"fnAggregate": "function(current, a) { return (current + a) * 1.0 }",
+					"fnCombine": "function(partialA, partialB) { return (partialA + partialB) * 1.0 }",
+					"fnReset": "function() { return 0.0; }"
+				},
+				{
+					"type": "javascript",
+					"name": "sum_of_counts_using_js",
+					"fieldNames": ["count"],
+					"fnAggregate": "function(current, a) { return (current + a) * 1.0 }",
+					"fnCombine": "function(partialA, partialB) { return (partialA + partialB) * 1.0 }",
+					"fnReset": "function() { return 0.0; }"
+				}
+
+			],
+			"postAggregations": [{
+				"type": "arithmetic",
+				"name": "add_3_to_count_aggregation",
+				"fn": "+",
+				"fields": [{
+						"type": "fieldAccess",
+						"fieldName": "count_of_values"
+					},
+					{
+						"type": "constant",
+						"name": "three",
+						"value": 3
+					}
+				]
+			}],
+			"intervals": ["2017-06-05T00:00:02Z/2017-06-05T23:59:59Z"]
+		}
+
+	},
+
+	"granularity": "hour",
+	"dimensions": [],
+	"aggregations": [
+
+		{
+			"type": "count",
+			"name": "count_of_values_outer"
+		},
+		{
+			"type": "hyperUnique",
+			"name": "uniq_ppl_outer",
+			"fieldName": "uniq"
+		},
+		{
+			"type": "javascript",
+			"name": "sum_of_latenties_using_js_outer",
+			"fieldNames": ["sum_of_latenties_using_js"],
+			"fnAggregate": "function(current, a) { return (current + a) * 1.0 }",
+			"fnCombine": "function(partialA, partialB) { return (partialA + partialB) * 1.0 }",
+			"fnReset": "function() { return 0.0; }"
+		},
+		{
+			"type": "javascript",
+			"name": "sum_of_counts_using_js_outer",
+			"fieldNames": ["sum_of_counts_using_js"],
+			"fnAggregate": "function(current, a) { return (current + a) * 1.0 }",
+			"fnCombine": "function(partialA, partialB) { return (partialA + partialB) * 1.0 }",
+			"fnReset": "function() { return 0.0; }"
+		}
+
+	],
+	"postAggregations": [{
+		"type": "arithmetic",
+		"name": "add_3_to_count_aggregation_outer",
+		"fn": "+",
+		"fields": [{
+				"type": "fieldAccess",
+				"fieldName": "count_of_values_outer"
+			},
+			{
+				"type": "constant",
+				"name": "three",
+				"value": 3
+			}
+		]
+	}],
+	"intervals": ["2017-06-05T00:00:02Z/2017-06-05T23:59:59Z"]
+}

@@ -32,6 +32,8 @@ import io.druid.segment.DimensionSelector;
 import io.druid.segment.column.ValueType;
 import io.druid.segment.data.IndexedInts;
 
+import com.dataspark.masking.MaskingUtil;
+
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
@@ -44,6 +46,7 @@ public class PooledTopNAlgorithm
   private final TopNQuery query;
   private final StupidPool<ByteBuffer> bufferPool;
   private static final int AGG_UNROLL_COUNT = 8; // Must be able to fit loop below
+  private BufferAggregatorDetails aggregatorDetails;
 
   public PooledTopNAlgorithm(
       Capabilities capabilities,
@@ -164,7 +167,8 @@ public class PooledTopNAlgorithm
   @Override
   protected BufferAggregator[] makeDimValAggregateStore(PooledTopNParams params)
   {
-    return makeBufferAggregators(params.getCursor(), query.getAggregatorSpecs());
+    this.aggregatorDetails = getBufferAggregatorDetails(params.getCursor(), query.getAggregatorSpecs());
+    return aggregatorDetails.theBufferAggregators;
   }
   /**
    * Use aggressive loop unrolling to aggregate the data
@@ -481,6 +485,9 @@ public class PooledTopNAlgorithm
         Object[] vals = new Object[theAggregators.length];
         for (int j = 0; j < theAggregators.length; j++) {
           vals[j] = theAggregators[j].get(resultsBuf, position);
+          if(MaskingUtil.shouldMask(query.getDataSource(), aggregatorDetails.fieldNames[j])){
+            vals[j] = MaskingUtil.doMask(vals[j]);
+          }
           position += aggregatorSizes[j];
         }
 

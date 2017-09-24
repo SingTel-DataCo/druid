@@ -215,7 +215,8 @@ public class ScanQueryEngine
                                   ScanResultValue.timestampKey,
                                   timestampColumnSelector,
                                   selectorPlusList,
-                                  metSelectors
+                                  metSelectors,
+                                  query.getDataSource()
                               );
                               events.add(theEvent);
                             }

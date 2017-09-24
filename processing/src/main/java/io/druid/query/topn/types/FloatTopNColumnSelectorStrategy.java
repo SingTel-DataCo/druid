@@ -29,12 +29,18 @@ import io.druid.segment.Capabilities;
 import io.druid.segment.Cursor;
 import io.druid.segment.FloatColumnSelector;
 import io.druid.segment.column.ValueType;
+
+import com.dataspark.masking.MaskingUtil;
+
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 
 public class FloatTopNColumnSelectorStrategy
     implements TopNColumnSelectorStrategy<FloatColumnSelector, Int2ObjectMap<Aggregator[]>>
 {
+  private BaseTopNAlgorithm.AggregatorDetails aggregatorDetails;
+  private TopNQuery query;
+
   @Override
   public int getCardinality(FloatColumnSelector selector)
   {
@@ -70,11 +76,13 @@ public class FloatTopNColumnSelectorStrategy
       Int2ObjectMap<Aggregator[]> aggregatesStore
   )
   {
+    this.query = query;
     while (!cursor.isDone()) {
       int key = Float.floatToIntBits(selector.get());
       Aggregator[] theAggregators = aggregatesStore.get(key);
       if (theAggregators == null) {
-        theAggregators = BaseTopNAlgorithm.makeAggregators(cursor, query.getAggregatorSpecs());
+        this.aggregatorDetails = BaseTopNAlgorithm.getAggregatorDetails(cursor, query.getAggregatorSpecs());
+        theAggregators = aggregatorDetails.theAggregators;
         aggregatesStore.put(key, theAggregators);
       }
       for (Aggregator aggregator : theAggregators) {
@@ -97,6 +105,9 @@ public class FloatTopNColumnSelectorStrategy
         Object[] vals = new Object[aggs.length];
         for (int i = 0; i < aggs.length; i++) {
           vals[i] = aggs[i].get();
+          if(MaskingUtil.shouldMask(query.getDataSource(), aggregatorDetails.fieldNames[i])){
+            vals[i] = MaskingUtil.doMask(vals[i]);
+          }
         }
 
         Comparable key = Float.intBitsToFloat(entry.getIntKey());

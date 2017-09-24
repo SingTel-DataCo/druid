@@ -1,0 +1,20 @@
+[ {
+  "timestamp" : "2017-06-05T17:00:00.000Z",
+  "result" : [ {
+    "sum_of_latency" : 200,
+    "add_one_to_sum_aggregation" : 201.0,
+    "url" : "/foo/bar1"
+  }, {
+    "sum_of_latency" : 200,
+    "add_one_to_sum_aggregation" : 201.0,
+    "url" : "/foo/bar2"
+  }, {
+    "sum_of_latency" : 200,
+    "add_one_to_sum_aggregation" : 201.0,
+    "url" : "/foo/bar3"
+  }, {
+    "sum_of_latency" : 200,
+    "add_one_to_sum_aggregation" : 201.0,
+    "url" : "/foo/bar4"
+  } ]
+} ]

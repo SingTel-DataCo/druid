@@ -1,0 +1,37 @@
+{
+        "queryType": "timeseries",
+        "dataSource": "data",
+        "granularity": "hour",
+        "aggregations": [
+        {
+                "type": "longSum",
+                "name": "sum_aggregation",
+                "fieldName": "sum"
+        },
+{
+                "type": "hyperUnique",
+                "name": "uniq_ppl",
+                "fieldName": "uniq"
+        },
+                {
+                "type": "javascript",
+                "name": "sum of latencies using js",
+                 "fieldNames": ["sum"],
+        "fnAggregate": "function(current, a) { return (current + a) * 1.0 }",
+        "fnCombine": "function(partialA, partialB) { return (partialA + partialB) * 1.0 }",
+        "fnReset": "function() { return 0.0; }"
+                }
+
+        ],
+ "postAggregations": [
+    { "type": "arithmetic",
+      "name": "add_one_to_sum_aggregation",
+      "fn": "+",
+      "fields": [
+        { "type" : "fieldAccess",  "fieldName" : "sum_aggregation" },
+        { "type"  : "constant", "name"  : "one", "value" : 1 }
+      ]
+    }
+  ],
+        "intervals": ["2017-06-05T00:00:02Z/2017-06-05T23:59:59Z"]
+}

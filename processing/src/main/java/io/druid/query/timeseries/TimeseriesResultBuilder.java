@@ -54,4 +54,10 @@ public class TimeseriesResultBuilder
         new TimeseriesResultValue(metricValues)
     );
   }
+
+  public TimeseriesResultBuilder addMetric(String name, Object value)
+  {
+    metricValues.put(name, value);
+    return this;
+  }
 }

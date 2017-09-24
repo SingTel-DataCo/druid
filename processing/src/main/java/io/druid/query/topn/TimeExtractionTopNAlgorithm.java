@@ -26,12 +26,15 @@ import io.druid.segment.Capabilities;
 import io.druid.segment.Cursor;
 import io.druid.segment.DimensionSelector;
 
+import com.dataspark.masking.MaskingUtil;
+
 import java.util.Map;
 
 public class TimeExtractionTopNAlgorithm extends BaseTopNAlgorithm<int[], Map<String, Aggregator[]>, TopNParams>
 {
   public static final int[] EMPTY_INTS = new int[]{};
   private final TopNQuery query;
+  private AggregatorDetails aggregatorDetails;
 
   public TimeExtractionTopNAlgorithm(Capabilities capabilities, TopNQuery query)
   {
@@ -85,7 +88,8 @@ public class TimeExtractionTopNAlgorithm extends BaseTopNAlgorithm<int[], Map<St
 
       Aggregator[] theAggregators = aggregatesStore.get(key);
       if (theAggregators == null) {
-        theAggregators = makeAggregators(cursor, query.getAggregatorSpecs());
+        this.aggregatorDetails = getAggregatorDetails(params.getCursor(), query.getAggregatorSpecs());
+        theAggregators = (Aggregator[]) aggregatorDetails.theAggregators;
         aggregatesStore.put(key, theAggregators);
       }
 
@@ -111,6 +115,9 @@ public class TimeExtractionTopNAlgorithm extends BaseTopNAlgorithm<int[], Map<St
         Object[] vals = new Object[aggs.length];
         for (int i = 0; i < aggs.length; i++) {
           vals[i] = aggs[i].get();
+          if(MaskingUtil.shouldMask(query.getDataSource(), aggregatorDetails.fieldNames[i])){
+            vals[i] = MaskingUtil.doMask(vals[i]);
+          }
         }
 
         resultBuilder.addEntry(

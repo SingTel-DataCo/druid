@@ -1,0 +1,28 @@
+
+  "queryType": "topN",
+  "dataSource": "data",
+  "dimension": "url",
+  "threshold": 5,
+  "metric": "sum_of_latency",
+  "granularity": "all",
+  "aggregations": [
+    {
+      "type": "longSum", "fieldName" : "sum",
+      "name": "sum_of_latency"
+    }
+  ],
+"postAggregations": [
+    { "type": "arithmetic",
+      "name": "add_one_to_sum_aggregation",
+      "fn": "+",
+      "fields": [
+        { "type" : "fieldAccess",  "fieldName" : "sum_of_latency" },
+        { "type"  : "constant", "name"  : "one", "value" : 1 }
+      ]
+    }
+  ]
+  ,
+  "intervals": [
+    "2017-06-05T00:00:02Z/2017-06-05T23:59:59Z"
+  ]
+}
