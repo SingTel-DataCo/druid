@@ -484,7 +484,7 @@ public class QueryResource implements QueryCountStatsProvider
   }
 
   private void prepareForResultMasking(Query query){
-    System.out.println(query.getDataSource().getNames());
+
     switch (query.getType()){
       case Query.GROUP_BY:
         GroupByQuery gq = (GroupByQuery)query;

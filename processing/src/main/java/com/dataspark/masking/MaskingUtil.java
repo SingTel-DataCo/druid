@@ -9,6 +9,7 @@
 package com.dataspark.masking;
 
 import io.druid.hll.HyperLogLogCollector;
+import io.druid.java.util.common.logger.Logger;
 import io.druid.query.DataSource;
 import io.druid.query.TableDataSource;
 
@@ -25,11 +26,16 @@ import java.util.Set;
 public class MaskingUtil
 {
 
+  private static final Logger log = new Logger(MaskingUtil.class);
+
+  private static HyperLogLogCollector FAKE_HUMANS_PRIVACY_SET; //the size of the set is constant.
+
   static {
-    System.out.println("**The server has been configured to do masking: " + maskingOn());
-    System.out.println("**The server has been configured to do masking for metrics : " + metricsToMask());
-    System.out.println("**The server has been configured with extrapolation factor: " + getExtrapolationFactor());
-    System.out.println("**The server has been configured with privacy threshold: " + getPrivacyThreshold());
+    log.warn("**The server has been configured to do masking: " + maskingOn());
+    log.warn("**The server has been configured to do masking for metrics : " + metricsToMask());
+    log.warn("**The server has been configured with extrapolation factor: " + getExtrapolationFactor());
+    log.warn("**The server has been configured with privacy threshold: " + getPrivacyThreshold());
+    FAKE_HUMANS_PRIVACY_SET = createFakeHyperLog(getPrivacyThreshold());
   }
 
   //extrapolate functions
@@ -59,16 +65,18 @@ public class MaskingUtil
   public static boolean shouldMask(DataSource dataSource, String fieldName)
   {
     if(!maskingOn() || dataSource == null){
-      System.out.println("[ MASKING_UTIL ] will not mask: " + fieldName +" of datasource: " + dataSource);
+      log.warn("[ MASKING_UTIL ] will not mask: " + fieldName + " of datasource: " + dataSource);
       return false;
     }
 
-    //only do if the datasource is a table ie. true source of data and not a nested query datasource
+    //Masking should apply ONLY to 'TableDatasource' as 'TableDatasource' is the source of data.
+    //if you have a groupBy query with 'QueryDatasource', the masking should apply to the TableDatasource in the inner query only and not on the datasource of outer query.
+    //http://druid.io/docs/latest/querying/datasource.html - refer to 'Query Data Source'
     final boolean shouldMask = (dataSource instanceof TableDataSource) && !org.apache.commons.lang.StringUtils.isEmpty(
         fieldName) && metricsToMask().contains(
         ((TableDataSource) dataSource).getName().concat(".").concat(fieldName));
 
-    System.out.println("[ MASKING_UTIL ] should mask: " + fieldName +" of datasource: "+ dataSource.getNames() +" = " + shouldMask + " ,DatasourceClass: " + dataSource.getClass());
+    log.warn("[ MASKING_UTIL ] should mask: " + fieldName + " of datasource: " + dataSource.getNames() + " = " + shouldMask + " ,DatasourceClass: " + dataSource.getClass());
     return shouldMask;
   }
 
@@ -94,7 +102,7 @@ public class MaskingUtil
     final long extrapolatedEstimate = extrapolate(originalEstimate);
 
     if(extrapolatedEstimate < privacyThreshold) {
-      return createFakeHyperLog(privacyThreshold);
+      return FAKE_HUMANS_PRIVACY_SET;
     }//else return extrapolated number.
 
     return createFakeHyperLog(extrapolatedEstimate);
@@ -142,7 +150,7 @@ public class MaskingUtil
   }
 
   public static boolean maskingOn(){
-    return Boolean.parseBoolean(System.getProperty("DATASPARK_DO_MASKING", "true"));
+    return Boolean.parseBoolean(System.getProperty("DATASPARK_DO_MASKING", "false"));//of by default
   }
 
   public static Set<String> metricsToMask(){
