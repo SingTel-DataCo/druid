@@ -1,0 +1,25 @@
+[ {
+  "timestamp" : "2017-06-05T17:00:00.000Z",
+  "result" : {
+    "sum_aggregation" : 46,
+    "add_one_to_sum_aggregation" : 47.0,
+    "sum of latencies using js" : 46.0,
+    "uniq_ppl" : 2.000977198748901
+  }
+}, {
+  "timestamp" : "2017-06-05T18:00:00.000Z",
+  "result" : {
+    "sum_aggregation" : 23,
+    "add_one_to_sum_aggregation" : 24.0,
+    "sum of latencies using js" : 23.0,
+    "uniq_ppl" : 1.0002442201269182
+  }
+}, {
+  "timestamp" : "2017-06-05T19:00:00.000Z",
+  "result" : {
+    "sum_aggregation" : 23,
+    "add_one_to_sum_aggregation" : 24.0,
+    "sum of latencies using js" : 23.0,
+    "uniq_ppl" : 1.0002442201269182
+  }
+} ]

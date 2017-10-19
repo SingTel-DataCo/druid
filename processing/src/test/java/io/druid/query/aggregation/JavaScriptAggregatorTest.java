@@ -23,6 +23,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import io.druid.js.JavaScriptConfig;
+import io.druid.query.DataSource;
 import io.druid.query.dimension.DimensionSpec;
 import io.druid.segment.ColumnSelectorFactory;
 import io.druid.segment.DimensionSelector;
@@ -36,8 +37,10 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 
 public class JavaScriptAggregatorTest
@@ -135,7 +138,15 @@ public class JavaScriptAggregatorTest
         JavaScriptAggregatorFactory.compileScript(
             script.get("fnAggregate"),
             script.get("fnReset"),
-            script.get("fnCombine")
+            script.get("fnCombine"),
+            new ArrayList<String>(),
+            new DataSource() {
+              @Override
+              public List<String> getNames() {
+                return Arrays.asList("test");
+              }
+
+            }
         )
     );
 
@@ -171,7 +182,15 @@ public class JavaScriptAggregatorTest
         JavaScriptAggregatorFactory.compileScript(
             script.get("fnAggregate"),
             script.get("fnReset"),
-            script.get("fnCombine")
+            script.get("fnCombine"),
+            new ArrayList<String>(),
+            new DataSource() {
+              @Override
+              public List<String> getNames() {
+                return Arrays.asList("test");
+              }
+
+            }
         )
     );
 
@@ -207,7 +226,14 @@ public class JavaScriptAggregatorTest
         JavaScriptAggregatorFactory.compileScript(
             script.get("fnAggregate"),
             script.get("fnReset"),
-            script.get("fnCombine")
+            script.get("fnCombine"),
+            new ArrayList<String>(),
+            new DataSource() {
+              @Override
+              public List<String> getNames() {
+                return Arrays.asList("test");
+              }
+            }
         )
     );
 
@@ -238,7 +264,15 @@ public class JavaScriptAggregatorTest
         JavaScriptAggregatorFactory.compileScript(
             "function aggregate(current, a) { if (Array.isArray(a)) { return current + a.length; } else if (typeof a === 'string') { return current + 1; } else { return current; } }",
             scriptDoubleSum.get("fnReset"),
-            scriptDoubleSum.get("fnCombine")
+            scriptDoubleSum.get("fnCombine"),
+            new ArrayList<String>(),
+            new DataSource() {
+              @Override
+              public List<String> getNames() {
+                return Arrays.asList("test");
+              }
+
+            }
         )
     );
 
@@ -331,7 +365,14 @@ public class JavaScriptAggregatorTest
         JavaScriptAggregatorFactory.compileScript(
             script.get("fnAggregate"),
             script.get("fnReset"),
-            script.get("fnCombine")
+            script.get("fnCombine"),
+            new ArrayList<String>(),
+            new DataSource() {
+              @Override
+              public List<String> getNames() {
+                return Arrays.asList("test");
+              }
+            }
         )
     );
 

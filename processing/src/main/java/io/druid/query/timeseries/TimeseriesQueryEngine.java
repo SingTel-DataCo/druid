@@ -31,6 +31,8 @@ import io.druid.segment.SegmentMissingException;
 import io.druid.segment.StorageAdapter;
 import io.druid.segment.filter.Filters;
 
+import com.dataspark.masking.MaskingUtil;
+
 import java.util.List;
 
 /**
@@ -85,7 +87,13 @@ public class TimeseriesQueryEngine
               TimeseriesResultBuilder bob = new TimeseriesResultBuilder(cursor.getTime());
 
               for (int i = 0; i < aggregatorSpecs.size(); i++) {
-                bob.addMetric(aggregatorNames[i], aggregators[i]);
+                Object value = aggregators[i].get();
+                {
+                  if(MaskingUtil.shouldMask(query.getDataSource(), aggregatorSpecs.get(i).getFieldName())) {
+                    value = MaskingUtil.doMask(value);
+                  }
+                }
+                bob.addMetric(aggregatorNames[i], value);
               }
 
               Result<TimeseriesResultValue> retVal = bob.build();

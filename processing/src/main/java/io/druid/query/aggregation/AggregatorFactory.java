@@ -21,6 +21,7 @@ package io.druid.query.aggregation;
 
 import io.druid.java.util.common.Cacheable;
 import io.druid.java.util.common.logger.Logger;
+import io.druid.query.DataSource;
 import io.druid.segment.ColumnSelectorFactory;
 
 import java.util.Comparator;
@@ -40,6 +41,8 @@ import java.util.Map;
  */
 public abstract class AggregatorFactory implements Cacheable
 {
+  protected DataSource dataSource; // the datasource from the query object to which this aggregator applies (its just contextual info)
+
   private static final Logger log = new Logger(AggregatorFactory.class);
 
   public abstract Aggregator factorize(ColumnSelectorFactory metricFactory);
@@ -47,6 +50,16 @@ public abstract class AggregatorFactory implements Cacheable
   public abstract BufferAggregator factorizeBuffered(ColumnSelectorFactory metricFactory);
 
   public abstract Comparator getComparator();
+
+  public DataSource getDataSource()
+  {
+    return dataSource;
+  }
+
+  public void setDataSource(DataSource dataSource)
+  {
+    this.dataSource = dataSource;
+  }
 
   /**
    * A method that knows how to combine the outputs of the getIntermediate() method from the Aggregators
@@ -113,6 +126,11 @@ public abstract class AggregatorFactory implements Cacheable
   public abstract Object finalizeComputation(Object object);
 
   public abstract String getName();
+
+  public String getFieldName()
+  {
+    return "__NOT_APPLICABLE__";//for javascript aggregator which works on multiple fieldnames, this is not applicable
+  }
 
   public abstract List<String> requiredFields();
 

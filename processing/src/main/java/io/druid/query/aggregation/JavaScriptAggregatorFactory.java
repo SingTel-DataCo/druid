@@ -19,6 +19,7 @@
 
 package io.druid.query.aggregation;
 
+import com.dataspark.masking.MaskingUtil;
 import com.fasterxml.jackson.annotation.JacksonInject;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -31,6 +32,7 @@ import com.google.common.primitives.Doubles;
 import io.druid.java.util.common.ISE;
 import io.druid.java.util.common.StringUtils;
 import io.druid.js.JavaScriptConfig;
+import io.druid.query.DataSource;
 import io.druid.segment.ColumnSelectorFactory;
 import io.druid.segment.ObjectColumnSelector;
 import org.mozilla.javascript.Context;
@@ -59,7 +61,7 @@ public class JavaScriptAggregatorFactory extends AggregatorFactory
   private final String fnCombine;
   private final JavaScriptConfig config;
 
-  private final JavaScriptAggregator.ScriptAggregator compiledScript;
+  private JavaScriptAggregator.ScriptAggregator compiledScript;
 
   @JsonCreator
   public JavaScriptAggregatorFactory(
@@ -85,11 +87,7 @@ public class JavaScriptAggregatorFactory extends AggregatorFactory
     this.fnCombine = fnCombine;
     this.config = config;
 
-    if (config.isEnabled()) {
-      this.compiledScript = compileScript(fnAggregate, fnReset, fnCombine);
-    } else {
-      this.compiledScript = null;
-    }
+    compile();
   }
 
   @Override
@@ -274,6 +272,14 @@ public class JavaScriptAggregatorFactory extends AggregatorFactory
            '}';
   }
 
+  public void compile(){
+    if (config.isEnabled()) {
+      this.compiledScript = compileScript(fnAggregate, fnReset, fnCombine, fieldNames, dataSource);
+    } else {
+      this.compiledScript = null;
+    }
+  }
+
   private JavaScriptAggregator.ScriptAggregator getCompiledScript()
   {
     if (compiledScript == null) {
@@ -287,7 +293,9 @@ public class JavaScriptAggregatorFactory extends AggregatorFactory
   static JavaScriptAggregator.ScriptAggregator compileScript(
       final String aggregate,
       final String reset,
-      final String combine
+      final String combine,
+      List<String> fieldNames,
+      DataSource dataSource
   )
   {
     final ContextFactory contextFactory = ContextFactory.getGlobal();
@@ -321,7 +329,10 @@ public class JavaScriptAggregatorFactory extends AggregatorFactory
         for (int i = 0; i < size; i++) {
           final ObjectColumnSelector selector = selectorList[i];
           if (selector != null) {
-            final Object arg = selector.get();
+            Object arg = selector.get();
+            if(!fieldNames.isEmpty() && MaskingUtil.shouldMask(dataSource, fieldNames.get(i))) {
+              arg = MaskingUtil.doMask(arg);
+            }
             if (arg != null && arg.getClass().isArray()) {
               // Context.javaToJS on an array sort of works, although it returns false for Array.isArray(...) and
               // may have other issues too. Let's just copy the array and wrap that.

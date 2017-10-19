@@ -1,0 +1,53 @@
+{
+  "type" : "index",
+  "spec" : {
+    "ioConfig" : {
+      "type": "index",
+      "firehose": {
+        "type": "local",
+        "baseDir": "<local_file_system_absolute_path_of_directory>",
+        "filter": "masking_data.json"
+	}
+
+    },
+    "dataSchema" : {
+      "dataSource" : "data",
+      "granularitySpec" : {
+        "type" : "uniform",
+        "segmentGranularity" : "day",
+        "queryGranularity" : "hour",
+        "intervals" : ["2017-06-05T00:00:00.000+08:00/2017-06-05T23:59:59.000+08:00"]
+      },
+      "parser" : {
+        "type" : "hadoopyString",
+        "parseSpec" : {
+          "format" : "json",
+          "dimensionsSpec" : {
+            "dimensions" : [
+              "user","url","latencyMs"
+            ]
+          },
+           "dimensionExclusions" : [],
+          "timestampSpec" : {
+            "format" : "auto",
+            "column" : "time"
+          }
+        }
+      },
+      "metricsSpec" : [
+{"name": "count", "type": "count"},
+{"type" : "longSum", "name" : "sum", "fieldName" : "latencyMs"},
+{"type" : "hyperUnique", "name" : "uniq", "fieldName" : "user"}
+       ]
+    },
+    "tuningConfig" : {
+      "type" : "index",
+      "partitionsSpec" : {
+        "type" : "hashed",
+        "targetPartitionSize" : 5000000
+      },
+      "jobProperties" : {}
+    }
+  }
+}
+

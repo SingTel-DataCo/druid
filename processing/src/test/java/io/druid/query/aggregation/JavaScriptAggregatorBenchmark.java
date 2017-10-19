@@ -23,8 +23,12 @@ import com.google.caliper.Runner;
 import com.google.caliper.SimpleBenchmark;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import io.druid.query.DataSource;
 import io.druid.segment.ObjectColumnSelector;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 
 public class JavaScriptAggregatorBenchmark extends SimpleBenchmark
@@ -57,7 +61,15 @@ public class JavaScriptAggregatorBenchmark extends SimpleBenchmark
         JavaScriptAggregatorFactory.compileScript(
             script.get("fnAggregate"),
             script.get("fnReset"),
-            script.get("fnCombine")
+            script.get("fnCombine"),
+            new ArrayList<String>(),
+            new DataSource() {
+              @Override
+              public List<String> getNames() {
+                return Arrays.asList("benchmark_js");
+              }
+
+            }
         )
     );
 

@@ -36,6 +36,7 @@ public class CountAggregatorFactory extends AggregatorFactory
 {
   private static final byte[] CACHE_KEY = new byte[]{0x0};
   private final String name;
+  public static final String special_count_metric = "special_count_metric";
 
   @JsonCreator
   public CountAggregatorFactory(
@@ -100,6 +101,16 @@ public class CountAggregatorFactory extends AggregatorFactory
   public String getName()
   {
     return name;
+  }
+
+  @Override
+  public String getFieldName()
+  {
+    //this is not a jsonproperty as getName has it.
+    return special_count_metric;
+    //every datasource can have only 1 count metric defined. hence it does not need a fieldName when u include in the ingestion spec file
+    //{ "type" : "count", "name" : <output_name> } --> no field name required. hence we fix the name forever as 'special_count_metric'
+    //please add 'datasourcename.special_count_metric' to list of masked metrics if u want masking. (MaskingUtil.java)
   }
 
   @Override

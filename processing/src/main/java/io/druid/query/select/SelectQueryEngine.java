@@ -30,6 +30,7 @@ import io.druid.java.util.common.IAE;
 import io.druid.java.util.common.ISE;
 import io.druid.java.util.common.guava.Sequence;
 import io.druid.query.ColumnSelectorPlus;
+import io.druid.query.DataSource;
 import io.druid.query.QueryRunnerHelper;
 import io.druid.query.Result;
 import io.druid.query.dimension.DefaultDimensionSpec;
@@ -52,6 +53,9 @@ import io.druid.segment.column.ValueType;
 import io.druid.segment.data.IndexedInts;
 import io.druid.segment.filter.Filters;
 import io.druid.timeline.DataSegmentUtils;
+
+import com.dataspark.masking.MaskingUtil;
+
 import org.joda.time.DateTime;
 import org.joda.time.Interval;
 
@@ -253,7 +257,8 @@ public class SelectQueryEngine
                   EventHolder.timestampKey,
                   timestampColumnSelector,
                   selectorPlusList,
-                  metSelectors
+                  metSelectors,
+                  query.getDataSource()
               );
 
               builder.addEntry(
@@ -273,11 +278,12 @@ public class SelectQueryEngine
     );
   }
 
-  public static Map<String, Object> singleEvent(
+  public static Map<String, Object>   singleEvent(
       String timestampKey,
       LongColumnSelector timestampColumnSelector,
       List<ColumnSelectorPlus<SelectColumnSelectorStrategy>> selectorPlusList,
-      Map<String, ObjectColumnSelector> metSelectors
+      Map<String, ObjectColumnSelector> metSelectors,
+      DataSource dataSource
   )
   {
     final Map<String, Object> theEvent = Maps.newLinkedHashMap();
@@ -294,7 +300,11 @@ public class SelectQueryEngine
       if (selector == null) {
         theEvent.put(metric, null);
       } else {
-        theEvent.put(metric, selector.get());
+        if (MaskingUtil.shouldMask(dataSource, metric)) {
+          theEvent.put(metric, MaskingUtil.doMask(selector.get()));
+        }else {
+          theEvent.put(metric, selector.get());
+        }
       }
     }
     return theEvent;

@@ -1,0 +1,30 @@
+[ {
+  "version" : "v1",
+  "timestamp" : "2017-06-05T17:00:00.000Z",
+  "event" : {
+    "sum_of_latenties_using_js_outer" : 400.0,
+    "add_3_to_count_aggregation_outer" : 4.0,
+    "count_of_values_outer" : 1,
+    "uniq_ppl_outer" : 0.0,
+    "sum_of_counts_using_js_outer" : 400.0
+  }
+}, {
+  "version" : "v1",
+  "timestamp" : "2017-06-05T18:00:00.000Z",
+  "event" : {
+    "sum_of_latenties_using_js_outer" : 200.0,
+    "add_3_to_count_aggregation_outer" : 4.0,
+    "count_of_values_outer" : 1,
+    "uniq_ppl_outer" : 0.0,
+    "sum_of_counts_using_js_outer" : 200.0
+  }
+}, {
+  "version" : "v1",
+  "timestamp" : "2017-06-05T19:00:00.000Z",
+  "event" : {
+    "sum_of_latenties_using_js_outer" : 200.0,
+    "add_3_to_count_aggregation_outer" : 4.0,
+    "count_of_values_outer" : 1,
+    "uniq_ppl_outer" : 0.0,
+    "sum_of_counts_using_js_outer" : 200.0
+  } ]

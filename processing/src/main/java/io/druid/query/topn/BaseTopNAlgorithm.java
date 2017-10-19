@@ -39,6 +39,9 @@ import java.util.List;
 public abstract class BaseTopNAlgorithm<DimValSelector, DimValAggregateStore, Parameters extends TopNParams>
     implements TopNAlgorithm<DimValSelector, Parameters>
 {
+  /**
+   * @deprecated deprecated by dataspark. use getAggregatorDetails(...)
+   */
   public static Aggregator[] makeAggregators(Cursor cursor, List<AggregatorFactory> aggregatorSpecs)
   {
     Aggregator[] aggregators = new Aggregator[aggregatorSpecs.size()];
@@ -50,7 +53,26 @@ public abstract class BaseTopNAlgorithm<DimValSelector, DimValAggregateStore, Pa
     return aggregators;
   }
 
-  protected static BufferAggregator[] makeBufferAggregators(Cursor cursor, List<AggregatorFactory> aggregatorSpecs)
+  public static AggregatorDetails getAggregatorDetails(Cursor cursor, List<AggregatorFactory> aggregatorSpecs)
+  {
+    AggregatorDetails aggregatorDetails = new AggregatorDetails();
+    Aggregator[] aggregators = new Aggregator[aggregatorSpecs.size()];
+    String[] fieldNames = new String[aggregatorSpecs.size()];
+    int aggregatorIndex = 0;
+    for (AggregatorFactory spec : aggregatorSpecs) {
+      aggregators[aggregatorIndex] = spec.factorize(cursor);
+      fieldNames[aggregatorIndex] = spec.getFieldName();
+      ++aggregatorIndex;
+    }
+    aggregatorDetails.theAggregators = aggregators;
+    aggregatorDetails.fieldNames = fieldNames;
+    return aggregatorDetails;
+  }
+
+  /**
+   * @deprecated deprecated by dataspark. use getBufferAggregatorDetails(...)
+   */
+  public static BufferAggregator[] makeBufferAggregators(Cursor cursor, List<AggregatorFactory> aggregatorSpecs)
   {
     BufferAggregator[] aggregators = new BufferAggregator[aggregatorSpecs.size()];
     int aggregatorIndex = 0;
@@ -60,6 +82,36 @@ public abstract class BaseTopNAlgorithm<DimValSelector, DimValAggregateStore, Pa
     }
     return aggregators;
   }
+
+  protected static BufferAggregatorDetails getBufferAggregatorDetails(Cursor cursor, List<AggregatorFactory> aggregatorSpecs)
+  {
+    BufferAggregatorDetails aggregatorDetails = new BufferAggregatorDetails();
+    BufferAggregator[] aggregators = new BufferAggregator[aggregatorSpecs.size()];
+    String[] fieldNames = new String[aggregatorSpecs.size()];
+    int aggregatorIndex = 0;
+    for (AggregatorFactory spec : aggregatorSpecs) {
+      aggregators[aggregatorIndex] = spec.factorizeBuffered(cursor);
+      fieldNames[aggregatorIndex] = spec.getFieldName();
+      ++aggregatorIndex;
+    }
+    aggregatorDetails.theBufferAggregators = aggregators;
+    aggregatorDetails.fieldNames = fieldNames;
+    return aggregatorDetails;
+  }
+
+  protected static class BufferAggregatorDetails {
+    protected String[] fieldNames;//ordering of fieldnames matches its aggregator
+    protected BufferAggregator[] theBufferAggregators; //ordering of aggregator matches its fieldName
+  }
+
+  /**
+   * metadata class for aggregator to its fieldname
+   */
+  public static class AggregatorDetails {
+    public String[] fieldNames;//ordering of fieldnames matches its aggregator
+    public Aggregator[] theAggregators; //ordering of aggregator matches its fieldName
+  }
+
 
   protected final Capabilities capabilities;
 

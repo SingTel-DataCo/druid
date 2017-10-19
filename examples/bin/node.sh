@@ -21,6 +21,9 @@ shift
 
 command=$1
 
+#to mask a Count metric/aggregator for datasource 'a', u need to specify 2metrics in the list 'a.count' & 'a.special_count_metric'
+MASKING_OPTS="-DDATASPARK_DO_MASKING=true -DDATASPARK_EXTRAPOLATION_FACTOR=1.35 -DDATASPARK_PRIVACY_THRESHOLD=200 -DDATASPARK_MASKED_METRICS=data.uniq,data.special_count_metric,data.sum,data.count,data2.latencyMs,data2.uniq,data2.special_count_metric,data2.sum,data2.count"
+
 LIB_DIR="${DRUID_LIB_DIR:=lib}"
 CONF_DIR="${DRUID_CONF_DIR:=conf/druid}"
 LOG_DIR="${DRUID_LOG_DIR:=log}"
@@ -40,7 +43,7 @@ case $command in
     fi
     if [ ! -d "$PID_DIR" ]; then mkdir -p $PID_DIR; fi
     if [ ! -d "$LOG_DIR" ]; then mkdir -p $LOG_DIR; fi
-    nohup java `cat $CONF_DIR/$nodeType/jvm.config | xargs` -cp $CONF_DIR/_common:$CONF_DIR/$nodeType:$LIB_DIR/*:$HADOOP_CONF_DIR io.druid.cli.Main server $nodeType > $LOG_DIR/$nodeType.log &
+    nohup java `cat $CONF_DIR/$nodeType/jvm.config | xargs` $MASKING_OPTS -cp $CONF_DIR/_common:$CONF_DIR/$nodeType:$LIB_DIR/*:$HADOOP_CONF_DIR io.druid.cli.Main server $nodeType > $LOG_DIR/$nodeType.log &
     nodeType_PID=$!
     echo $nodeType_PID > $pid
     echo "Started $nodeType node ($nodeType_PID)"

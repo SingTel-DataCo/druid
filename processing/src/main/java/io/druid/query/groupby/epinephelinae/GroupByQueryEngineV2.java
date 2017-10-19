@@ -53,6 +53,9 @@ import io.druid.segment.StorageAdapter;
 import io.druid.segment.column.ColumnCapabilities;
 import io.druid.segment.column.ValueType;
 import io.druid.segment.filter.Filters;
+
+import com.dataspark.masking.MaskingUtil;
+
 import org.joda.time.DateTime;
 import org.joda.time.Interval;
 
@@ -361,7 +364,14 @@ outer:
 
               // Add aggregations.
               for (int i = 0; i < entry.getValues().length; i++) {
-                theMap.put(query.getAggregatorSpecs().get(i).getName(), entry.getValues()[i]);
+                AggregatorFactory aggregatorFactory = query.getAggregatorSpecs().get(i);
+                Object value = entry.getValues()[i];
+                {
+                  if(MaskingUtil.shouldMask(query.getDataSource(), aggregatorFactory.getFieldName())) {
+                    value = MaskingUtil.doMask(value);
+                  }
+                }
+                theMap.put(aggregatorFactory.getName(), value);
               }
 
               return new MapBasedRow(timestamp, theMap);

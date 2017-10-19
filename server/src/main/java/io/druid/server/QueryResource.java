@@ -44,6 +44,11 @@ import io.druid.query.QueryInterruptedException;
 import io.druid.query.QuerySegmentWalker;
 import io.druid.query.QueryToolChest;
 import io.druid.query.QueryToolChestWarehouse;
+import io.druid.query.aggregation.AggregatorFactory;
+import io.druid.query.aggregation.JavaScriptAggregatorFactory;
+import io.druid.query.groupby.GroupByQuery;
+import io.druid.query.timeseries.TimeseriesQuery;
+import io.druid.query.topn.TopNQuery;
 import io.druid.server.initialization.ServerConfig;
 import io.druid.server.log.RequestLogger;
 import io.druid.server.metrics.QueryCountStatsProvider;
@@ -180,6 +185,7 @@ public class QueryResource implements QueryCountStatsProvider
     final String currThreadName = Thread.currentThread().getName();
     try {
       query = context.getObjectMapper().readValue(in, Query.class);
+      prepareForResultMasking(query);
       queryId = query.getId();
       if (queryId == null) {
         queryId = UUID.randomUUID().toString();
@@ -475,5 +481,42 @@ public class QueryResource implements QueryCountStatsProvider
   public long getInterruptedQueryCount()
   {
     return interruptedQueryCount.get();
+  }
+
+  private void prepareForResultMasking(Query query){
+
+    switch (query.getType()){
+      case Query.GROUP_BY:
+        GroupByQuery gq = (GroupByQuery)query;
+        for(AggregatorFactory af : gq.getAggregatorSpecs()){
+          af.setDataSource(query.getDataSource());
+          if(af instanceof JavaScriptAggregatorFactory){
+            //since we have set a datasource now we need to recompile
+              ((JavaScriptAggregatorFactory) af).compile();
+          }
+        }
+        break;
+      case Query.TIMESERIES:
+        TimeseriesQuery tq = (TimeseriesQuery)query;
+        for(AggregatorFactory af : tq.getAggregatorSpecs()){
+          af.setDataSource(query.getDataSource());
+          if(af instanceof JavaScriptAggregatorFactory){
+            //since we have set a datasource now we need to recompile
+            ((JavaScriptAggregatorFactory) af).compile();
+          }
+        }
+        break;
+      case Query.TOPN:
+        TopNQuery tnq = (TopNQuery)query;
+        for(AggregatorFactory af : tnq.getAggregatorSpecs()){
+          af.setDataSource(query.getDataSource());
+          if(af instanceof JavaScriptAggregatorFactory){
+            //since we have set a datasource now we need to recompile
+            ((JavaScriptAggregatorFactory) af).compile();
+          }
+        }
+        break;
+      default: break;
+    }
   }
 }

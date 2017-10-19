@@ -1,0 +1,4 @@
+{"time":"2017-06-05T17:00:02Z","url":"/foo/bar1","user":"a","latencyMs":23}
+{"time":"2017-06-05T17:30:01Z","url":"/foo/bar2","user":"b","latencyMs":23}
+{"time":"2017-06-05T18:00:01Z","url":"/foo/bar3","user":"c","latencyMs":23}
+{"time":"2017-06-05T19:00:03Z","url":"/foo/bar4","user":"d","latencyMs":23}

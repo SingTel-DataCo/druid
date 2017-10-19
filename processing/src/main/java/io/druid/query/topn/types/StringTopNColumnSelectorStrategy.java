@@ -32,11 +32,15 @@ import io.druid.segment.DimensionSelector;
 import io.druid.segment.column.ValueType;
 import io.druid.segment.data.IndexedInts;
 
+import com.dataspark.masking.MaskingUtil;
 import java.util.Map;
 
 public class StringTopNColumnSelectorStrategy
     implements TopNColumnSelectorStrategy<DimensionSelector, Map<String, Aggregator[]>>
 {
+  private BaseTopNAlgorithm.AggregatorDetails aggregatorDetails; //ordered hashmap of field name to its aggregator.
+  private TopNQuery query;
+
   @Override
   public int getCardinality(DimensionSelector selector)
   {
@@ -85,6 +89,7 @@ public class StringTopNColumnSelectorStrategy
       Map<String, Aggregator[]> aggregatesStore
   )
   {
+    this.query = query;
     if (selector.getValueCardinality() != DimensionSelector.CARDINALITY_UNKNOWN) {
       dimExtractionScanAndAggregateWithCardinalityKnown(query, cursor, selector, rowSelector, aggregatesStore);
     } else {
@@ -105,6 +110,9 @@ public class StringTopNColumnSelectorStrategy
         Object[] vals = new Object[aggs.length];
         for (int i = 0; i < aggs.length; i++) {
           vals[i] = aggs[i].get();
+          if(MaskingUtil.shouldMask(query.getDataSource(), aggregatorDetails.fieldNames[i])){
+            vals[i] = MaskingUtil.doMask(vals[i]);
+          }
         }
 
         Comparable key = entry.getKey();
@@ -138,7 +146,9 @@ public class StringTopNColumnSelectorStrategy
           final String key = selector.lookupName(dimIndex);
           theAggregators = aggregatesStore.get(key);
           if (theAggregators == null) {
-            theAggregators = BaseTopNAlgorithm.makeAggregators(cursor, query.getAggregatorSpecs());
+            this.aggregatorDetails = BaseTopNAlgorithm.getAggregatorDetails(cursor,
+                query.getAggregatorSpecs());
+            theAggregators = (Aggregator[]) aggregatorDetails.theAggregators;
             aggregatesStore.put(key, theAggregators);
           }
           rowSelector[dimIndex] = theAggregators;
@@ -167,7 +177,9 @@ public class StringTopNColumnSelectorStrategy
 
         Aggregator[] theAggregators = aggregatesStore.get(key);
         if (theAggregators == null) {
-          theAggregators = BaseTopNAlgorithm.makeAggregators(cursor, query.getAggregatorSpecs());
+          this.aggregatorDetails = BaseTopNAlgorithm.getAggregatorDetails(cursor,
+              query.getAggregatorSpecs());
+          theAggregators = aggregatorDetails.theAggregators;
           aggregatesStore.put(key, theAggregators);
         }
         for (Aggregator aggregator : theAggregators) {

@@ -1,0 +1,31 @@
+[ {
+  "version" : "v1",
+  "timestamp" : "2017-06-05T17:00:00.000Z",
+  "event" : {
+    "add_3_to_count_aggregation" : 203.0,
+    "sum_of_latenties_using_js" : 400.0,
+    "sum_of_counts_using_js" : 400.0,
+    "count_of_values" : 200,
+    "uniq_ppl" : 196.09544605111853
+  }
+}, {
+  "version" : "v1",
+  "timestamp" : "2017-06-05T18:00:00.000Z",
+  "event" : {
+    "add_3_to_count_aggregation" : 203.0,
+    "sum_of_latenties_using_js" : 200.0,
+    "sum_of_counts_using_js" : 200.0,
+    "count_of_values" : 200,
+    "uniq_ppl" : 196.09544605111853
+  }
+}, {
+  "version" : "v1",
+  "timestamp" : "2017-06-05T19:00:00.000Z",
+  "event" : {
+    "add_3_to_count_aggregation" : 203.0,
+    "sum_of_latenties_using_js" : 200.0,
+    "sum_of_counts_using_js" : 200.0,
+    "count_of_values" : 200,
+    "uniq_ppl" : 196.09544605111853
+  }
+} ]

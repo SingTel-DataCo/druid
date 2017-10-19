@@ -24,9 +24,11 @@
   -->
 
 <module name="Checker">
-  <module name="Header">
-    <property name="headerFile" value="${checkstyle.header.file}"/>
+  <module name="RegexpHeader">
     <property name="fileExtensions" value="java"/>
+    <property
+            name="header"
+            value="\A/\*\n * Licensed to.*"/>
   </module>
 
   <module name="NewlineAtEndOfFile"/>
