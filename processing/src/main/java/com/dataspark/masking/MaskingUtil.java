@@ -35,6 +35,7 @@ public class MaskingUtil
     log.warn("**The server has been configured to do masking for metrics : " + metricsToMask());
     log.warn("**The server has been configured with extrapolation factor: " + getExtrapolationFactor());
     log.warn("**The server has been configured with privacy threshold: " + getPrivacyThreshold());
+    log.warn("**The server has been configured to mask zero count values: " + shouldMaskZeroCounts());
     FAKE_HUMANS_PRIVACY_SET = createFakeHyperLog(getPrivacyThreshold());
   }
 
@@ -82,21 +83,33 @@ public class MaskingUtil
 
   public static long mask(long value)
   {
+    if(value == 0l && !shouldMaskZeroCounts()){
+      return 0l;
+    }
     return applyPrivacyCensor(extrapolate(value));
   }
 
   public static long mask(float value)
   {
+    if(value == 0.0f && !shouldMaskZeroCounts()){
+      return 0l;
+    }
     return applyPrivacyCensor(extrapolate(value));
   }
 
   public static long mask(double value)
   {
+    if(value == 0.0d && !shouldMaskZeroCounts()){
+      return 0l;
+    }
     return applyPrivacyCensor(extrapolate(value));
   }
 
   public static HyperLogLogCollector mask(HyperLogLogCollector hal)
   {
+    if(hal.estimateCardinality() < 1.0d && !shouldMaskZeroCounts()){//its an estimate, so 0.00099 is treated as a zero.
+      return hal;
+    }
     final long privacyThreshold = getPrivacyThreshold();
     final double originalEstimate = hal.estimateCardinality();
     final long extrapolatedEstimate = extrapolate(originalEstimate);
@@ -151,6 +164,11 @@ public class MaskingUtil
 
   public static boolean maskingOn(){
     return Boolean.parseBoolean(System.getProperty("DATASPARK_DO_MASKING", "false"));//of by default
+  }
+
+  public static boolean shouldMaskZeroCounts(){
+    //ie. report 0 trips as 0 trips , 0 humans as 0
+    return Boolean.parseBoolean(System.getProperty("MASK_ZERO_COUNTS", "true"));//yes by default
   }
 
   public static Set<String> metricsToMask(){
