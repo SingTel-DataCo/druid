@@ -33,6 +33,7 @@ public class MaskingUtilTest {
     System.setProperty("DATASPARK_EXTRAPOLATION_FACTOR", "1.4");
     System.setProperty("DATASPARK_DO_MASKING", "true");
     System.setProperty("DATASPARK_MASKED_METRICS", datasourceName.concat(".").concat("hello").concat(",test2.bye"));
+    System.setProperty("MASK_ZERO_COUNTS", "true");
   }
 
   @Before
@@ -140,6 +141,34 @@ public class MaskingUtilTest {
     Assert.assertEquals(MaskingUtil.getPrivacyThreshold(), MaskingUtil.applyPrivacyCensor(1));
     Assert.assertEquals(MaskingUtil.getPrivacyThreshold() + 100, MaskingUtil.applyPrivacyCensor(
         MaskingUtil.getPrivacyThreshold() + 100));
+  }
+
+  @Test
+  public void testNoMaskingOfZeroCounts(){
+
+    try {
+      System.setProperty("MASK_ZERO_COUNTS", "false");
+      HyperLogLogCollector zeroPeople = MaskingUtil.createFakeHyperLog(0);
+      HyperLogLogCollector onePerson = MaskingUtil.createFakeHyperLog(1);
+      System.out.println(zeroPeople.estimateCardinality());
+
+      final boolean maskZeroes = MaskingUtil.shouldMaskZeroCounts();
+      Assert.assertFalse(maskZeroes);
+
+      Assert.assertTrue(MaskingUtil.mask(new Long(0)) == 0l);
+      Assert.assertTrue(MaskingUtil.mask(new Double(0)) == 0l);
+      Assert.assertTrue(MaskingUtil.mask(new Float(0)) == 0l);
+      Assert.assertTrue(MaskingUtil.mask(zeroPeople).estimateCardinality() == zeroPeople.estimateCardinality());
+      Assert.assertTrue(
+          MaskingUtil.mask(onePerson).estimateCardinality() == MaskingUtil.createFakeHyperLog(
+              MaskingUtil.getPrivacyThreshold()).estimateCardinality());
+      Assert.assertFalse(MaskingUtil.mask(new Long(1)) == 0l);
+      Assert.assertFalse(MaskingUtil.mask(new Double(0.1)) == 0l);
+      Assert.assertFalse(MaskingUtil.mask(new Float(0.1)) == 0l);
+    } finally {
+      //reset it.
+      System.setProperty("MASK_ZERO_COUNTS", "true");
+    }
   }
 
   private class Foo{
