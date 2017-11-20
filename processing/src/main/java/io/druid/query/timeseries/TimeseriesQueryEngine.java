@@ -89,7 +89,8 @@ public class TimeseriesQueryEngine
               for (int i = 0; i < aggregatorSpecs.size(); i++) {
                 Object value = aggregators[i].get();
                 {
-                  if(MaskingUtil.shouldMask(query.getDataSource(), aggregatorSpecs.get(i).getFieldName())) {
+                  if(MaskingUtil.shouldMaskAtRunTime(query.getDataSource(),
+                      aggregatorSpecs.get(i).getFieldName())) {
                     value = MaskingUtil.doMask(value);
                   }
                 }

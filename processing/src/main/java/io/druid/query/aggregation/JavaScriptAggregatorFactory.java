@@ -330,7 +330,8 @@ public class JavaScriptAggregatorFactory extends AggregatorFactory
           final ObjectColumnSelector selector = selectorList[i];
           if (selector != null) {
             Object arg = selector.get();
-            if(!fieldNames.isEmpty() && MaskingUtil.shouldMask(dataSource, fieldNames.get(i))) {
+            if(!fieldNames.isEmpty() && MaskingUtil.shouldMaskAtRunTime(dataSource,
+                fieldNames.get(i))) {
               arg = MaskingUtil.doMask(arg);
             }
             if (arg != null && arg.getClass().isArray()) {

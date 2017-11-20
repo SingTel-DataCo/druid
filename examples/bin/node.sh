@@ -21,9 +21,23 @@ shift
 
 command=$1
 
+###Masking
+## use any one of the following: RUNTIME_MASKING_OPTS or REVEAL_HIP_METRICS_OPTS.
+#
+## (1) For runtime_masking
 #to mask a Count metric/aggregator for datasource 'a', u need to specify 2metrics in the list 'a.count' & 'a.special_count_metric'
 #masking zero counts can happen only if the flag 'DATASPARK_DO_MASKING' is set to true first, i.e. flag 'DATASPARK_DO_MASKING' takes precedence.
-MASKING_OPTS="-DMASK_ZERO_COUNTS=false -DDATASPARK_DO_MASKING=true -DDATASPARK_EXTRAPOLATION_FACTOR=1.35 -DDATASPARK_PRIVACY_THRESHOLD=200 -DDATASPARK_MASKED_METRICS=data.uniq,data.special_count_metric,data.sum,data.count,data2.latencyMs,data2.uniq,data2.special_count_metric,data2.sum,data2.count"
+#RUNTIME_MASKING_OPTS=" -DMASK_ZERO_COUNTS=false -DDATASPARK_DO_MASKING=true -DDATASPARK_EXTRAPOLATION_FACTOR=1.35 -DDATASPARK_PRIVACY_THRESHOLD=200 -DDATASPARK_MASKED_METRICS=data.uniq,data.special_count_metric,data.sum,data.count,data2.latencyMs,data2.uniq,data2.special_count_metric,data2.sum,data2.count "
+# or
+## (2) if REVEAL_HIP_METRICS_OPTS are set then that means masking has been done at indexing time, so dont use runtime masking and send the hipkey with post request to broker.
+#REVEAL_HIP_METRICS_OPTS=" -DREVEAL_HIP_METRIC=false -DHIP_METRIC_KEY=b275822c7da805d368bcd56fb614e95C# "
+
+if [ -n "$RUNTIME_MASKING_OPTS" ] && [ -n "$REVEAL_HIP_METRICS_OPTS" ]; then
+    echo "Both Runtime Masking and Revealing HIP metrics options have been set. Only one should be set."
+    echo "If metrics are masked at indexing time then use 'REVEAL_HIP_METRICS_OPTS' ."
+    echo "If metrics are not masked at indexing time then use 'RUNTIME_MASKING_OPTS'. i.e. mask at runtime ."
+    exit 2
+fi
 
 LIB_DIR="${DRUID_LIB_DIR:=lib}"
 CONF_DIR="${DRUID_CONF_DIR:=conf/druid}"
@@ -44,7 +58,7 @@ case $command in
     fi
     if [ ! -d "$PID_DIR" ]; then mkdir -p $PID_DIR; fi
     if [ ! -d "$LOG_DIR" ]; then mkdir -p $LOG_DIR; fi
-    nohup java `cat $CONF_DIR/$nodeType/jvm.config | xargs` $MASKING_OPTS -cp $CONF_DIR/_common:$CONF_DIR/$nodeType:$LIB_DIR/*:$HADOOP_CONF_DIR io.druid.cli.Main server $nodeType > $LOG_DIR/$nodeType.log
+    nohup java `cat $CONF_DIR/$nodeType/jvm.config | xargs` $REVEAL_HIP_METRICS_OPTS $RUNTIME_MASKING_OPTS -cp $CONF_DIR/_common:$CONF_DIR/$nodeType:$LIB_DIR/*:$HADOOP_CONF_DIR io.druid.cli.Main server $nodeType > $LOG_DIR/$nodeType.log
     nodeType_PID=$!
     echo $nodeType_PID > $pid
     echo "Started $nodeType node ($nodeType_PID)"

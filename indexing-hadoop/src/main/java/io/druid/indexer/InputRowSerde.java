@@ -28,6 +28,7 @@ import com.google.common.io.ByteArrayDataOutput;
 import com.google.common.io.ByteStreams;
 import io.druid.data.input.InputRow;
 import io.druid.data.input.MapBasedInputRow;
+import io.druid.hll.HyperLogLogCollector;
 import io.druid.java.util.common.IAE;
 import io.druid.java.util.common.logger.Logger;
 import io.druid.java.util.common.parsers.ParseException;
@@ -37,6 +38,9 @@ import io.druid.segment.incremental.IncrementalIndex;
 import io.druid.segment.serde.ComplexMetricSerde;
 import io.druid.segment.serde.ComplexMetrics;
 import io.druid.segment.VirtualColumns;
+
+import com.dataspark.masking.MaskingUtil;
+
 import org.apache.hadoop.io.ArrayWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.io.WritableUtils;
@@ -52,7 +56,12 @@ public class InputRowSerde
 {
   private static final Logger log = new Logger(InputRowSerde.class);
 
-  public static final byte[] toBytes(final InputRow row, AggregatorFactory[] aggs, boolean reportParseExceptions)
+
+  public static final byte[] toBytes(final InputRow row, AggregatorFactory[] aggs, boolean reportParseExceptions){
+    return toBytes(row, aggs, reportParseExceptions, false);
+  }
+
+  public static final byte[] toBytes(final InputRow row, AggregatorFactory[] aggs, boolean reportParseExceptions, final boolean applyMasking)
   {
     try {
       ByteArrayDataOutput out = ByteStreams.newDataOutput();
@@ -108,12 +117,30 @@ public class InputRowSerde
         String t = aggFactory.getTypeName();
 
         if (t.equals("float")) {
-          out.writeFloat(agg.getFloat());
+          float f = agg.getFloat();
+          if (applyMasking && MaskingUtil.shouldMaskWhileIndexing(aggFactory.getDataSource(),
+              aggFactory.getName())) {
+              //check for aggFactory.getName and not aggFactory.getFieldName .. i.e. check for the actual metric name and not the field on which the aggregator is applied.
+              f = MaskingUtil.mask(f);
+          }
+          out.writeFloat(f);
         } else if (t.equals("long")) {
-          WritableUtils.writeVLong(out, agg.getLong());
+          long l = agg.getLong();
+          if (applyMasking && MaskingUtil.shouldMaskWhileIndexing(aggFactory.getDataSource(),
+              aggFactory.getName())) {
+            //check for aggFactory.getName and not aggFactory.getFieldName .. i.e. check for the actual metric name and not the field on which the aggregator is applied.
+            l = MaskingUtil.mask(l);
+          }
+          WritableUtils.writeVLong(out, l);
         } else {
           //its a complex metric
           Object val = agg.get();
+          if (applyMasking && MaskingUtil.shouldMaskWhileIndexing(aggFactory.getDataSource(), aggFactory.getName())) {
+            //check for aggFactory.getName and not aggFactory.getFieldName .. i.e. check for the actual metric name and not the field on which the aggregator is applied.
+            if (val instanceof HyperLogLogCollector){
+              val = MaskingUtil.mask((HyperLogLogCollector)val);
+            }
+          }
           ComplexMetricSerde serde = getComplexMetricSerde(t);
           writeBytes(serde.toBytes(val), out);
         }

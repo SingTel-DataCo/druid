@@ -37,9 +37,11 @@ import io.druid.java.util.common.guava.Sequence;
 import io.druid.java.util.common.guava.Sequences;
 import io.druid.java.util.common.guava.Yielder;
 import io.druid.java.util.common.guava.Yielders;
+import io.druid.query.DataSource;
 import io.druid.query.DruidMetrics;
 import io.druid.query.Query;
 import io.druid.query.QueryContextKeys;
+import io.druid.query.QueryDataSource;
 import io.druid.query.QueryInterruptedException;
 import io.druid.query.QuerySegmentWalker;
 import io.druid.query.QueryToolChest;
@@ -47,6 +49,7 @@ import io.druid.query.QueryToolChestWarehouse;
 import io.druid.query.aggregation.AggregatorFactory;
 import io.druid.query.aggregation.JavaScriptAggregatorFactory;
 import io.druid.query.groupby.GroupByQuery;
+import io.druid.query.select.SelectQuery;
 import io.druid.query.timeseries.TimeseriesQuery;
 import io.druid.query.topn.TopNQuery;
 import io.druid.server.initialization.ServerConfig;
@@ -76,6 +79,10 @@ import javax.ws.rs.core.StreamingOutput;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -185,6 +192,10 @@ public class QueryResource implements QueryCountStatsProvider
     final String currThreadName = Thread.currentThread().getName();
     try {
       query = context.getObjectMapper().readValue(in, Query.class);
+      if(this instanceof BrokerQueryResource) {
+        //IMPORTANT: for now broker is SOLELY responsible for checking access to HIP metrics.if you 2b more strict. enable this check at historical too !!
+        checkRequestForHipMetrics(query, req);
+      }
       prepareForResultMasking(query);
       queryId = query.getId();
       if (queryId == null) {
@@ -483,6 +494,7 @@ public class QueryResource implements QueryCountStatsProvider
     return interruptedQueryCount.get();
   }
 
+  //this method is used by druid when runtime masking is enabled in druid.
   private void prepareForResultMasking(Query query){
 
     switch (query.getType()){
@@ -518,5 +530,91 @@ public class QueryResource implements QueryCountStatsProvider
         break;
       default: break;
     }
+  }
+
+  private final Set<String> Query_Types_Containing_HipMetrics = new HashSet<>(Arrays.asList(Query.GROUP_BY, Query.TIMESERIES, Query.SELECT, Query.TOPN));
+
+  private void checkRequestForHipMetrics(Query query, HttpServletRequest req)throws RuntimeException {
+    if(!Query_Types_Containing_HipMetrics.contains(query.getType())) {
+      //dont bother about this kind of query just return.
+      return;
+    }
+    //first see if any hip metrics are requested.
+    Set<String> requestedHipMetrics = getRequestedHipMetricsFromRequest(query);
+    log.debug("Requested hip metric(s):" + requestedHipMetrics.toString() + " : for queryId: " + query.getId());
+    //if yes,
+    if(requestedHipMetrics.size() > 0) {
+      //(a)check if server configured to reveal
+      HipMetricUtil.canServerRevealHipMetrics();
+      //(b)check if client reveal key is valid.
+      if(!HipMetricUtil.getRevealKey().equals(req.getHeader(HipMetricUtil.REVEAL_HTTP_HEADER))) {
+        log.warn("Client reveal key:" + req.getHeader(
+            HipMetricUtil.REVEAL_HTTP_HEADER) + " queryId: " + query.getId());
+        log.error(
+            "Attempt made to access to HIP metric. request was denied. provided reveal key did not match. ");
+        log.makeAlert("Attempt made to access to HIP metric. request was denied. provided reveal key did not match.");
+        throw new RuntimeException("Server cannot serve metric at this time. request is denied. Kindly check logs.");
+      }
+    }
+  }
+
+  private Set<String> getRequestedHipMetricsFromRequest(Query query) {
+    Set<String> hipMetrics = new HashSet<>();
+    DataSource dataSource = query.getDataSource();
+
+    if(dataSource instanceof QueryDataSource) {
+      //recursive as its inner query.
+      hipMetrics.addAll(getRequestedHipMetricsFromRequest(((QueryDataSource)dataSource).getQuery()));
+    } else {
+      //its table or union datasoruce so ...
+      switch (query.getType()) {
+        case Query.SELECT:
+          List<String> queryMetrics = ((SelectQuery) query).getMetrics();
+          if(queryMetrics == null || queryMetrics.size() == 0) {
+            //if is empty, all metrics are returned by druid as per docs. so be careful. lets add our special hidden metric which has suffix '_hip_'
+            queryMetrics = new ArrayList<>();
+            queryMetrics.add(HipMetricUtil.ANY_HIDDEN_METRIC);
+          }
+          for(String metric : queryMetrics) {
+            if(HipMetricUtil.isHiddenMetric(metric)) {
+              hipMetrics.add(metric);
+            }
+          }
+          break;
+        case Query.GROUP_BY:
+          hipMetrics.addAll(getMetricsFromAggregatorFactory(((GroupByQuery)query).getAggregatorSpecs()));
+          break;
+        case Query.TOPN:
+          hipMetrics.addAll(getMetricsFromAggregatorFactory(((TopNQuery)query).getAggregatorSpecs()));
+          break;
+        case Query.TIMESERIES:
+          hipMetrics.addAll(getMetricsFromAggregatorFactory(
+              ((TimeseriesQuery) query).getAggregatorSpecs()));
+          break;
+        default:
+          break;
+      }
+    }
+
+    return hipMetrics;
+  }
+
+  private Set<String> getMetricsFromAggregatorFactory(List<AggregatorFactory> factories) {
+    Set<String> hiddenMetrics = new HashSet<>();
+    for (AggregatorFactory factory : factories) {
+      if (factory instanceof JavaScriptAggregatorFactory) {
+        for (String metric : ((JavaScriptAggregatorFactory) factory).getFieldNames()) {
+          if (HipMetricUtil.isHiddenMetric(metric)) {
+            hiddenMetrics.add(metric);
+          }
+        }
+      } else {
+        String metric = factory.getFieldName();
+        if (HipMetricUtil.isHiddenMetric(metric)) {
+          hiddenMetrics.add(metric);
+        }
+      }
+    }
+    return hiddenMetrics;
   }
 }

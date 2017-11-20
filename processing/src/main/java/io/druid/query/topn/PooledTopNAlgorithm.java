@@ -485,7 +485,7 @@ public class PooledTopNAlgorithm
         Object[] vals = new Object[theAggregators.length];
         for (int j = 0; j < theAggregators.length; j++) {
           vals[j] = theAggregators[j].get(resultsBuf, position);
-          if(MaskingUtil.shouldMask(query.getDataSource(), aggregatorDetails.fieldNames[j])){
+          if(MaskingUtil.shouldMaskAtRunTime(query.getDataSource(), aggregatorDetails.fieldNames[j])){
             vals[j] = MaskingUtil.doMask(vals[j]);
           }
           position += aggregatorSizes[j];

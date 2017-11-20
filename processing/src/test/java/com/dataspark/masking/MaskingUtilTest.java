@@ -46,20 +46,20 @@ public class MaskingUtilTest {
   public void testOffSwitch()
   {
     System.setProperty("DATASPARK_DO_MASKING", "false");
-    Assert.assertFalse(MaskingUtil.shouldMask(new TableDataSource(datasourceName), "hello"));
+    Assert.assertFalse(MaskingUtil.shouldMaskAtRunTime(new TableDataSource(datasourceName), "hello"));
   }
 
   @Test
   public void testMaskingWhenNullDatasource()
   {
-    Assert.assertFalse(MaskingUtil.shouldMask(null, "hello"));
+    Assert.assertFalse(MaskingUtil.shouldMaskAtRunTime(null, "hello"));
   }
 
 
   @Test
   public void testMaskingWhenNonTableDatasource()
   {
-    Assert.assertFalse(MaskingUtil.shouldMask(new DataSource() {
+    Assert.assertFalse(MaskingUtil.shouldMaskAtRunTime(new DataSource() {
       @Override
       public List<String> getNames() {
         return null;
@@ -70,13 +70,14 @@ public class MaskingUtilTest {
   @Test
   public void testMaskingWhenTableDatasource()
   {
-    Assert.assertTrue(MaskingUtil.shouldMask(new TableDataSource(datasourceName), "hello"));
+    Assert.assertTrue(MaskingUtil.shouldMaskAtRunTime(new TableDataSource(datasourceName), "hello"));
   }
 
   @Test
   public void testMaskingWhenMetricNotregistered()
   {
-    Assert.assertFalse(MaskingUtil.shouldMask(new TableDataSource(datasourceName), "Notregistered"));
+    Assert.assertFalse(MaskingUtil.shouldMaskAtRunTime(new TableDataSource(datasourceName),
+        "Notregistered"));
   }
 
   @Test

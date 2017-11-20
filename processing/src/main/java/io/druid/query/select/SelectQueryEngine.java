@@ -300,7 +300,7 @@ public class SelectQueryEngine
       if (selector == null) {
         theEvent.put(metric, null);
       } else {
-        if (MaskingUtil.shouldMask(dataSource, metric)) {
+        if (MaskingUtil.shouldMaskAtRunTime(dataSource, metric)) {
           theEvent.put(metric, MaskingUtil.doMask(selector.get()));
         }else {
           theEvent.put(metric, selector.get());

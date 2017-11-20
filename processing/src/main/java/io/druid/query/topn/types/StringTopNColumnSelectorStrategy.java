@@ -110,7 +110,7 @@ public class StringTopNColumnSelectorStrategy
         Object[] vals = new Object[aggs.length];
         for (int i = 0; i < aggs.length; i++) {
           vals[i] = aggs[i].get();
-          if(MaskingUtil.shouldMask(query.getDataSource(), aggregatorDetails.fieldNames[i])){
+          if(MaskingUtil.shouldMaskAtRunTime(query.getDataSource(), aggregatorDetails.fieldNames[i])){
             vals[i] = MaskingUtil.doMask(vals[i]);
           }
         }

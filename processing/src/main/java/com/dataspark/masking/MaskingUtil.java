@@ -31,7 +31,9 @@ public class MaskingUtil
   private static HyperLogLogCollector FAKE_HUMANS_PRIVACY_SET; //the size of the set is constant.
 
   static {
-    log.warn("**The server has been configured to do masking: " + maskingOn());
+    log.warn("**The server has been configured to do masking at Runtime: " + maskAtRuntime());
+    log.warn("**The server has been configured to do masking WHILE indexing: " + maskWhileIndexing());
+
     log.warn("**The server has been configured to do masking for metrics : " + metricsToMask());
     log.warn("**The server has been configured with extrapolation factor: " + getExtrapolationFactor());
     log.warn("**The server has been configured with privacy threshold: " + getPrivacyThreshold());
@@ -63,9 +65,9 @@ public class MaskingUtil
   }
 
   //masking functions
-  public static boolean shouldMask(DataSource dataSource, String fieldName)
+  public static boolean shouldMaskAtRunTime(DataSource dataSource, String fieldName)
   {
-    if(!maskingOn() || dataSource == null){
+    if(!maskAtRuntime() || dataSource == null){
       log.warn("[ MASKING_UTIL ] will not mask: " + fieldName + " of datasource: " + dataSource);
       return false;
     }
@@ -162,7 +164,7 @@ public class MaskingUtil
     return Double.parseDouble(System.getProperty("DATASPARK_EXTRAPOLATION_FACTOR", "1.35"));
   }
 
-  public static boolean maskingOn(){
+  public static boolean maskAtRuntime(){
     return Boolean.parseBoolean(System.getProperty("DATASPARK_DO_MASKING", "false"));//of by default
   }
 
@@ -180,6 +182,29 @@ public class MaskingUtil
       metricsToMask = new HashSet<String>(Arrays.asList(inputMetricsToMask.split(",")));
     }
     return metricsToMask;
+  }
+
+  //make sure to turn on revealing of hidden in plain sight metrics refer HipMetricUtil.java
+  public static boolean maskWhileIndexing(){
+    return Boolean.parseBoolean(System.getProperty("DATASPARK_DO_MASKING_INDEX", "false"));//off by default
+  }
+
+  public static boolean shouldMaskWhileIndexing(DataSource dataSource, String fieldName)
+  {
+    if(!maskWhileIndexing() || dataSource == null){
+      log.warn("[ MASKING_UTIL ] will not mask: " + fieldName + " of datasource: " + dataSource);
+      return false;
+    }
+
+    //Masking should apply ONLY to 'TableDatasource' as 'TableDatasource' is the source of data.
+    //if you have a groupBy query with 'QueryDatasource', the masking should apply to the TableDatasource in the inner query only and not on the datasource of outer query.
+    //http://druid.io/docs/latest/querying/datasource.html - refer to 'Query Data Source'
+    final boolean shouldMask = (dataSource instanceof TableDataSource) && !org.apache.commons.lang.StringUtils.isEmpty(
+        fieldName) && metricsToMask().contains(
+        ((TableDataSource) dataSource).getName().concat(".").concat(fieldName));
+
+    log.warn("[ MASKING_UTIL ] should mask: " + fieldName + " of datasource: " + dataSource.getNames() + " = " + shouldMask + " ,DatasourceClass: " + dataSource.getClass());
+    return shouldMask;
   }
 
 }

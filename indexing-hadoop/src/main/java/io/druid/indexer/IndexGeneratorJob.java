@@ -19,6 +19,7 @@
 
 package io.druid.indexer;
 
+import com.dataspark.masking.MaskingUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Optional;
 import com.google.common.base.Throwables;
@@ -42,6 +43,7 @@ import io.druid.indexer.hadoop.SegmentInputRow;
 import io.druid.java.util.common.IAE;
 import io.druid.java.util.common.ISE;
 import io.druid.java.util.common.logger.Logger;
+import io.druid.query.TableDataSource;
 import io.druid.query.aggregation.AggregatorFactory;
 import io.druid.segment.BaseProgressIndicator;
 import io.druid.segment.ProgressIndicator;
@@ -263,6 +265,9 @@ public class IndexGeneratorJob implements Jobby
       combiningAggs = new AggregatorFactory[aggregators.length];
       for (int i = 0; i < aggregators.length; ++i) {
         combiningAggs[i] = aggregators[i].getCombiningFactory();
+        TableDataSource tds = new TableDataSource(config.getDataSource());
+        aggregators[i].setDataSource(tds);
+        combiningAggs[i].setDataSource(tds);
       }
     }
 
@@ -294,10 +299,14 @@ public class IndexGeneratorJob implements Jobby
       // type SegmentInputRow serves as a marker that these InputRow instances have already been combined
       // and they contain the columns as they show up in the segment after ingestion, not what you would see in raw
       // data
+
+      final boolean maskWhileIndexing = MaskingUtil.maskWhileIndexing();
+      log.warn("IndexGeneratorMapper - Writing index with Masking on : " + maskWhileIndexing);
+
       byte[] serializedInputRow = inputRow instanceof SegmentInputRow ?
-                                  InputRowSerde.toBytes(inputRow, combiningAggs, reportParseExceptions)
+                                  InputRowSerde.toBytes(inputRow, combiningAggs, reportParseExceptions, maskWhileIndexing)
                                                                       :
-                                  InputRowSerde.toBytes(inputRow, aggregators, reportParseExceptions);
+                                  InputRowSerde.toBytes(inputRow, aggregators, reportParseExceptions, maskWhileIndexing);
 
       context.write(
           new SortableBytes(
@@ -329,6 +338,9 @@ public class IndexGeneratorJob implements Jobby
       combiningAggs = new AggregatorFactory[aggregators.length];
       for (int i = 0; i < aggregators.length; ++i) {
         combiningAggs[i] = aggregators[i].getCombiningFactory();
+        TableDataSource tds = new TableDataSource(config.getDataSource());
+        aggregators[i].setDataSource(tds);
+        combiningAggs[i].setDataSource(tds);
       }
     }
 
@@ -373,6 +385,10 @@ public class IndexGeneratorJob implements Jobby
     {
       final List<String> dimensions = index.getDimensionNames();
       Iterator<Row> rows = index.iterator();
+
+      final boolean maskWhileIndexing = MaskingUtil.maskWhileIndexing();
+      log.warn("IndexGeneratorCombiner - Writing index with Masking on : " + maskWhileIndexing);
+
       while (rows.hasNext()) {
         context.progress();
         Row row = rows.next();
@@ -380,7 +396,7 @@ public class IndexGeneratorJob implements Jobby
         // reportParseExceptions is true as any unparseable data is already handled by the mapper.
         context.write(
             key,
-            new BytesWritable(InputRowSerde.toBytes(inputRow, combiningAggs, true))
+            new BytesWritable(InputRowSerde.toBytes(inputRow, combiningAggs, true, maskWhileIndexing))
         );
       }
       index.close();
@@ -543,6 +559,9 @@ public class IndexGeneratorJob implements Jobby
       for (int i = 0; i < aggregators.length; ++i) {
         metricNames.add(aggregators[i].getName());
         combiningAggs[i] = aggregators[i].getCombiningFactory();
+        TableDataSource tds = new TableDataSource(config.getDataSource());
+        aggregators[i].setDataSource(tds);
+        combiningAggs[i].setDataSource(tds);
       }
     }
 

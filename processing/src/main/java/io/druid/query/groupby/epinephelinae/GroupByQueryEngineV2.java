@@ -367,7 +367,8 @@ outer:
                 AggregatorFactory aggregatorFactory = query.getAggregatorSpecs().get(i);
                 Object value = entry.getValues()[i];
                 {
-                  if(MaskingUtil.shouldMask(query.getDataSource(), aggregatorFactory.getFieldName())) {
+                  if(MaskingUtil.shouldMaskAtRunTime(query.getDataSource(),
+                      aggregatorFactory.getFieldName())) {
                     value = MaskingUtil.doMask(value);
                   }
                 }
