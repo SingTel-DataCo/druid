@@ -95,6 +95,22 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 /**
+ * to apply masking at indexing time, in the job spec file set the 'jobProperties' to
+ *
+ * {
+ *   "type": "hadoop",
+ *           "partitionsSpec": {
+ *           "type": "hashed",
+ *           "targetPartitionSize": 5000000
+ *            },
+ *   "jobProperties": {
+ *      "mapred.child.java.opts": "-DDATASPARK_DO_MASKING_INDEX=true -Xmx200m -DDATASPARK_MASKED_METRICS=data4.count,data4.uniq,data4.sum",
+ *      "yarn.app.mapreduce.am.command-opts": "-Xmx1024m -DDATASPARK_DO_MASKING_INDEX=true -DDATASPARK_MASKED_METRICS=data4.count,data4.uniq,data4.sum",
+ *      "mapreduce.job.classloader": "true",
+ *      "mapreduce.job.classloader.system.classes": "-javax.validation.,java.,javax.,org.apache.commons.logging.,org.apache.log4j.,org.apache.hadoop.",
+ *      "io.compression.codecs": "org.apache.hadoop.io.compress.GzipCodec,org.apache.hadoop.io.compress.DefaultCodec,org.apache.hadoop.io.compress.BZip2Codec,org.apache.hadoop.io.compress.SnappyCodec"
+ *                    }
+ * }
  */
 public class IndexGeneratorJob implements Jobby
 {
