@@ -48,6 +48,9 @@ public class DruidHttpClientConfig
   private int numRequestsQueued = 1024;
 
   @JsonProperty
+  private Period unusedConnectionTimeout =  new Period("PT4M");
+
+  @JsonProperty
   private String compressionCodec = DEFAULT_COMPRESSION_CODEC;
 
   @JsonProperty
@@ -81,5 +84,13 @@ public class DruidHttpClientConfig
   public int getRequestBuffersize()
   {
     return requestBuffersize;
+  }
+
+  public Period getUnusedConnectionTimeout() {
+    return unusedConnectionTimeout;
+  }
+
+  public void setUnusedConnectionTimeout(Period unusedConnTimeout) {
+    this.unusedConnectionTimeout = unusedConnTimeout;
   }
 }

@@ -23,6 +23,7 @@ import com.google.common.collect.Sets;
 import com.google.inject.Binder;
 import com.google.inject.Inject;
 import com.google.inject.Module;
+import io.druid.java.util.common.logger.Logger;
 import io.druid.java.util.http.client.HttpClient;
 import io.druid.java.util.http.client.HttpClientConfig;
 import io.druid.java.util.http.client.HttpClientInit;
@@ -41,6 +42,9 @@ import java.util.Set;
  */
 public class HttpClientModule implements Module
 {
+
+  private static final Logger log = new Logger(HttpClientModule.class);
+
   public static HttpClientModule global()
   {
     return new HttpClientModule("druid.global.http", Global.class);
@@ -133,13 +137,18 @@ public class HttpClientModule implements Module
     @Override
     public HttpClient get()
     {
+
       final DruidHttpClientConfig config = getConfigProvider().get().get();
+
+      log.info("DATASPARK patch setting getUnusedConnectionTimeout to " + config.getUnusedConnectionTimeout().toStandardMinutes());
 
       final HttpClientConfig.Builder builder = HttpClientConfig
           .builder()
           .withNumConnections(config.getNumConnections())
           .withReadTimeout(config.getReadTimeout())
           .withWorkerCount(config.getNumMaxThreads())
+          .withUnusedConnectionTimeoutDuration(
+              config.getUnusedConnectionTimeout().toStandardDuration())
           .withCompressionCodec(
               HttpClientConfig.CompressionCodec.valueOf(StringUtils.toUpperCase(config.getCompressionCodec()))
           );
