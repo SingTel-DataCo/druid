@@ -17,7 +17,10 @@ MIP-635:
 
 (3) cp druid-server-0.13.0-SNAPSHOT.jar to $DRUID_0_12_0_INSTALLATION_HOME/lib/druid-server-0.12.0.jar 
 
-(4) edit $DRUID_0_12_0_INSTALLATION_HOME/conf/druid/broker/runtime.properties and set 'druid.broker.http.unusedConnectionTimeout=PT1M'
+(4) edit $DRUID_0_12_0_INSTALLATION_HOME/conf/druid/broker/runtime.properties and set 
+
+'druid.broker.http.unusedConnectionTimeout=PT1M'
+
 'druid.broker.http.readTimeout=PT15M'
 
 (5) restart broker
